@@ -9,14 +9,14 @@ public class Equation
 
     public Equation(string rawInput)
     {
-        RawText = rawInput;
+        RawText = rawInput ?? "";
         Tokens = Split();
     }
 
     public (double, string) Evaluate()
     {
-        var (success, error) = IsValid();
-        if (!success) return (double.NaN, error);
+        var (Success, Error) = IsValid();
+        if (!Success) return (double.NaN, Error);
 
         List<string> postfixResult = Parser.ConvertToPostfix(this);
         return (Evaluator.Evaluate(postfixResult), "No errors!");
@@ -52,50 +52,66 @@ public class Equation
     private List<string> Split()
     {
         string clean = RawText.Replace(" ", "");
-        List<string> tokenList = new();
-        StringBuilder currentNumber = new();
-        
+        List<string> tokensList = new List<string>();
+        StringBuilder currentNumber = new StringBuilder();
+        StringBuilder currentWord = new StringBuilder();
+
         for (int i = 0; i < clean.Length; i++)
         {
             char c = clean[i];
 
-            // handle unary minus like it's a number (e)
-            if (c == '-' 
-                && currentNumber.Length == 0 
-                && (tokenList.Count == 0 
-                || OperatorPrecedence.IsOperator(tokenList[tokenList.Count - 1]) 
-                || tokenList[tokenList.Count - 1] == "("))
+            // If we hit a symbol or number, flush any building variable word first
+            if (!char.IsLetter(c) && currentWord.Length > 0)
+            {
+                FlushWord(currentWord.ToString(), tokensList);
+                currentWord.Clear();
+            }
+
+            // 1. Unary Minus Check
+            if (c == '-' && currentNumber.Length == 0 && 
+                (tokensList.Count == 0 || OperatorPrecedence.IsOperator(tokensList[tokensList.Count - 1]) || tokensList[tokensList.Count - 1] == "("))
             {
                 currentNumber.Append(c);
                 continue;
             }
 
+            // 2. Tokenizing Logic Branches
             if (char.IsDigit(c) || c == '.')
             {
                 currentNumber.Append(c);
             }
-
-            // handle operators
+            else if (char.IsLetter(c))
+            {
+                currentWord.Append(c);
+            }
             else
             {
-                // publish the current number before processing operators
                 if (currentNumber.Length > 0)
                 {
-                    tokenList.Add(currentNumber.ToString());
+                    tokensList.Add(currentNumber.ToString());
                     currentNumber.Clear();
                 }
-
-                // publish operator
-                tokenList.Add(c.ToString());
+                tokensList.Add(c.ToString());
             }
         }
+        
+        if (currentWord.Length > 0) FlushWord(currentWord.ToString(), tokensList);
+        if (currentNumber.Length > 0) tokensList.Add(currentNumber.ToString());
 
-        // publish the final currentNumber in the expression (if able)
-        if (currentNumber.Length > 0)
+        return tokensList;
+    }
+
+    // Helper method to look up a variable and replace it with its double value
+    private static void FlushWord(string word, List<string> tokensList)
+    {
+        if (VariableRegistry.TryGet(word, out double val))
         {
-            tokenList.Add(currentNumber.ToString());
+            tokensList.Add(val.ToString());
         }
-
-        return tokenList;
+        else
+        {
+            // If the user uses a variable name that hasn't been defined yet, default it to 0
+            tokensList.Add("0");
+        }
     }
 }
