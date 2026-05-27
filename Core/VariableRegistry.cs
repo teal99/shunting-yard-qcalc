@@ -1,5 +1,3 @@
-using System.Collections.ObjectModel;
-
 namespace ShuntingYard.Core;
 
 public static class VariableRegistry

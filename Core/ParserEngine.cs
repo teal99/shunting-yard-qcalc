@@ -38,16 +38,10 @@ public static class Parser
             // if it's an operator, check the stack priority
             else if (OperatorPrecedence.IsOperator(token))
             {
-                /*
-                ---> compare the precedence of the top of the operator stack with the current token operator
-                ---> if the top of op stack's weight is greater/equal than the current token operator's
-                ---> push the top of op stack to the output queue
-                ---> after while-loop, push the current token to the operator stack
-                */ 
-                while (
-                    operatorStack.Count > 0
-                    && operatorStack.Peek() != "("
-                    && OperatorPrecedence.GetWeight(operatorStack.Peek()) >= OperatorPrecedence.GetWeight(token))
+                while (operatorStack.Count > 0 && 
+                       operatorStack.Peek() != "(" &&
+                       (OperatorPrecedence.GetWeight(operatorStack.Peek()) > OperatorPrecedence.GetWeight(token) ||
+                       (OperatorPrecedence.GetWeight(operatorStack.Peek()) == OperatorPrecedence.GetWeight(token) && token != "u-")))
                 {
                     outputQueue.Add(operatorStack.Pop());
                 }

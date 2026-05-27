@@ -103,7 +103,7 @@ internal static class Program
         if (double.IsNaN(finalAnswer))
         {
             Console.ForegroundColor = ConsoleColor.Red;
-            Console.WriteLine($"The program has caught errors: {feedback}");
+            Console.WriteLine($"The program has failed due to an error: {(string.IsNullOrEmpty(feedback) ? "The error couldn't be identified." : $"{feedback}")}");
         }
         else
         {

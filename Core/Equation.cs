@@ -13,13 +13,19 @@ public class Equation
         Tokens = Split();
     }
 
-    public (double, string) Evaluate()
+    public (double, string?) Evaluate()
     {
         var (Success, Error) = IsValid();
         if (!Success) return (double.NaN, Error);
 
+        // Console.WriteLine($"[DEBUG]: Token Stream: [ {string.Join(" ", Tokens)} ]");
+
         List<string> postfixResult = Parser.ConvertToPostfix(this);
-        return (Evaluator.Evaluate(postfixResult), "No errors!");
+
+        var (Result, Error2) = PostfixEvaluator.Evaluate(postfixResult);
+        if (!string.IsNullOrEmpty(Error2)) return (double.NaN, Error2);
+
+        return (Result, null);
     }
 
     public (bool, string) IsValid()
@@ -38,7 +44,7 @@ public class Equation
             if (c == '(') parenBalance++;
             if (c == ')') parenBalance--;
 
-            if (parenBalance < 0) return (false, $"This equation is missing {Math.Abs(parenBalance)} opening {(Math.Abs(parenBalance) == 1 ? "parenthesis" : "parentheses")}");
+            if (parenBalance < 0) return (false, $"This equation is missing {Math.Abs(parenBalance)} opening {(Math.Abs(parenBalance) == 1 ? "parenthesis" : "parentheses")}.");
         }
 
         if (parenBalance == 0)
@@ -46,7 +52,7 @@ public class Equation
             return (true, "");
         }
 
-        return (false, $"This equation is missing {parenBalance} closing {(parenBalance == 1 ? "parenthesis" : "parentheses")}");
+        return (false, $"This equation is missing {parenBalance} closing {(parenBalance == 1 ? "parenthesis" : "parentheses")}.");
     }
 
     private List<string> Split()
@@ -68,10 +74,13 @@ public class Equation
             }
 
             // 1. Unary Minus Check
-            if (c == '-' && currentNumber.Length == 0 && 
-                (tokensList.Count == 0 || OperatorPrecedence.IsOperator(tokensList[tokensList.Count - 1]) || tokensList[tokensList.Count - 1] == "("))
+            if (c == '-'
+                && currentNumber.Length == 0
+                    && (tokensList.Count == 0
+                    || OperatorPrecedence.IsOperator(tokensList[tokensList.Count - 1])
+                    || tokensList[tokensList.Count - 1] == "("))
             {
-                currentNumber.Append(c);
+                tokensList.Add("u-");
                 continue;
             }
 
